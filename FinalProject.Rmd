@@ -1,0 +1,142 @@
+---
+title: "Appendix"
+author: Jane Maguire
+date: "2024-05-13"
+output: 
+  pdf_document
+boxlinks: true
+colorlinks: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries and Data
+```{r}
+library(Stat2Data)
+load("soa2_SC321.RData")
+```
+
+
+### Descriptive Statistics for Binary Variables
+
+First, we look at the descriptive statistics for the binary variables by pulling the counts and percentages for each factor (0 or 1) for each variable.
+
+```{r}
+# Counts/percentages of binary statistics for Depr/Anx
+table(soa2$DeprAnx)
+prop.table(table(soa2$DeprAnx)) * 100
+
+# Counts/percentages of binary statistics for VisionBad
+table(soa2$VisionBad)
+prop.table(table(soa2$VisionBad)) * 100
+
+# Counts/percentages of binary statistics for SocialEnough
+table(soa2$SocialEnough)
+prop.table(table(soa2$SocialEnough)) * 100
+
+# Counts/percentages of binary statistics for Male
+table(soa2$Male)
+prop.table(table(soa2$Male)) * 100
+```
+
+
+### Summary Statistics for Qunatitative Variables
+
+Then, we look at the summary statistics for the two quantitative variables in order to look at Mean, median, and IQR. We also pull that standard deviation for each variable.
+
+
+```{r}
+# Summary statistics for Age
+summary(soa2$Age)
+sd(soa2$Age)
+
+# Summary statistics for DaysOut
+summary(soa2$DaysOut)
+sd(soa2$DaysOut)
+```
+
+
+
+### Unadjusted OR's and CI's that estimate relationships seperatley
+
+To begin our analysis, we fit models for predicting depression and anxiety with each of the predictor variables separately. We then pull the coefficients from each of these models in order to calculate the odds ratios. We then also calculate the confidence interval for each of these odds ratios.
+
+```{r}
+#DeprAnx and VisionBad
+model_vision <- glm(DeprAnx ~ VisionBad, data = soa2, family = binomial)
+vision_odds <- exp(coef(model_vision))
+vision_odds[2] #Odds Ratio
+exp(confint.lm(model_vision)[2,]) # Confidence Interval
+
+#DeprAnx and SocialEnough
+model_social <- glm(DeprAnx ~ SocialEnough, data = soa2, family = binomial)
+social_odds <- exp(coef(model_social))
+social_odds[2] #Odds Ratio
+exp(confint.lm(model_social)[2,]) # Confidence Interval
+
+#DeprAnx and Male
+model_male <- glm(DeprAnx ~ Male, data = soa2, family = binomial)
+male_odds <- exp(coef(model_male))
+male_odds[2] #Odds Ratio
+exp(confint.lm(model_male)[2,]) # Confidence Interval
+
+#DeprAnx and Age
+model_age <- glm(DeprAnx ~ Age, data = soa2, family = binomial)
+age_odds <- exp(coef(model_age))
+age_odds[2] #Odds Ratio
+exp(confint.lm(model_age)[2,]) # Confidence Interval
+
+#DeprAnx and DaysOut
+model_days <- glm(DeprAnx ~ DaysOut, data = soa2, family = binomial)
+days_odds <- exp(coef(model_days))
+days_odds[2] #Odds Ratio
+exp(confint.lm(model_days)[2,]) # Confidence Interval
+```
+
+
+
+### Adjusted OR's and CI's based on model that controls for all 5 variables jointly
+
+After fitting the models for each of the predictor variables separately, we now fit a model that controls for all 5 variables jointly.
+
+```{r}
+# Fit logistic regression model with all predictors
+model_all <- glm(DeprAnx ~ VisionBad + SocialEnough + Male + Age + DaysOut, data = soa2, family = binomial)
+```
+
+We then check the LIBS conditions to confirm that conditions are met. The LIBS conditions are as follows.
+
+L: the log odds at a given x, i.e. $logit(\pi(x_i))$, is a linear function $\beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \ldots$
+I: the $y_i$ values are independent of each other
+B: the responses $y_i$ each have a Bernoulli distribution that depends only on $\pi(x_i)$
+S: the data come from a simple random sample
+
+We can check the linearity assumption by creating a empirical logit plot. Because there are multiple binary variables that are also predictors we can not have more than 2 groups for those so linearity is guaranteed. We can check the Age and days out predictors with the graphs below and see than linearity is met.
+
+```{r fig.height=3, fig.width=4}
+attach(soa2)
+emplogitplot1(model_days, breaks = 0:14)
+emplogitplot1(model_age, ngroups = 10)
+detach(soa2)
+```
+
+We know from the data given to us that the $y_i$ values are independent of each other so the I assumption is met.
+
+The B assumption is met because the responses $y_i$ each have a Bernoulli distribution meaning the response(DeprAnx) is a binary variable.
+
+The S assumption is met because, again, we know from the information given that the data comes from a simple random sample.
+
+After checking all conditions, we now can use the model to obtain the odds ratios and confidence intervals just as we did in the first step of our analysis.
+
+```{r}
+# Get adjusted odds ratios and confidence intervals
+adjusted_odds <- exp(coef(model_all))
+adjusted_ci <- exp(confint.lm(model_all))
+adjusted_odds
+adjusted_ci
+```
+
+After obtaining the odds ratios and confidence intervals we have enough information to make inferences about our data. As mentioned in the discussion, based off the odds ratios for the full model, targeting interventions towards older females with vision impairment, social isolation, and limited outdoor activities may be a priority to address the highest risk of depression and/or anxiety in the elderly population.
+
